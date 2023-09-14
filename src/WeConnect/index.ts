@@ -174,7 +174,7 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
     const result = JSON.parse(await request.get())
     this.openid = result.openid
     return {
-      token: result.access_token,
+      token: result.openid + ':' + result.access_token,
       type: 'bearer',
     }
   }
@@ -190,10 +190,11 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
     callback?: (request: ApiRequest) => void
   ): Promise<AllyUserContract<WeConnectAccessToken>> {
     const accessToken = await this.accessToken()
+    const info = accessToken.token.split(':') // openid:access_token
     const urlBase = this.config.userInfoUrl || this.userInfoUrl
     const request = this.httpClient(urlBase)
-    request.param('access_token', accessToken.token)
-    request.param('openid', this.openid)
+    request.param('access_token', info[1] || '')
+    request.param('openid', info[0] || '')
     request.param('lang', 'zh_CN')
 
     /**
@@ -215,15 +216,16 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
     }
   }
 
-  // 这个方法有问题，openid在getAccessToken方法中设置到this.openid中，但是在这个方法是另一次独立请求，所以this.openid为空
+  // 将 openid 和 access_token 合并传输
   public async userFromToken(
     accessToken: string,
     callback?: (request: ApiRequest) => void
   ): Promise<AllyUserContract<{ token: string; type: 'bearer' }>> {
+    const info = accessToken.split(':') // openid:access_token
     const urlBase = this.config.userInfoUrl || this.userInfoUrl
     const request = this.httpClient(urlBase)
-    request.param('access_token', accessToken)
-    request.param('openid', this.openid)
+    request.param('access_token', info[1] || '')
+    request.param('openid', info[0] || '')
     request.param('lang', 'zh_CN')
 
     /**
