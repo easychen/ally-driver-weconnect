@@ -80,7 +80,7 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
    *
    * Do not define query strings in this URL.
    */
-  protected authorizeUrl = 'http://dd.ftqq.com/app/1'
+  protected authorizeUrl = 'https://open.weixin.qq.com/connect/oauth2/authorize'
 
   /**
    * The URL to hit to exchange the authorization code for the access token
@@ -135,8 +135,6 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
    */
   protected scopesSeparator = ' '
 
-  protected openid = ''
-
   constructor(ctx: HttpContextContract, public config: WeConnectConfig) {
     super(ctx, config)
 
@@ -147,6 +145,13 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
      * DO NOT REMOVE THE FOLLOWING LINE
      */
     this.loadState()
+  }
+
+  protected configureRedirectRequest(request: ApiRequest): void {
+    request.param('appid', this.config.clientId)
+    request.param('redirect_uri', this.config.callbackUrl)
+    request.param('response_type', 'code')
+    request.param('scope', 'snsapi_userinfo')
   }
 
   /**
@@ -172,7 +177,6 @@ export class WeConnect extends Oauth2Driver<WeConnectAccessToken, WeConnectScope
       callback(request)
     }
     const result = JSON.parse(await request.get())
-    this.openid = result.openid
     return {
       token: result.openid + ':' + result.access_token,
       type: 'bearer',
